@@ -1,1 +1,1 @@
-# Asembler-x86_64-instrukcije-opste-namene
+# Projekat iz predmeta Arhitektura i operativni sistemi
