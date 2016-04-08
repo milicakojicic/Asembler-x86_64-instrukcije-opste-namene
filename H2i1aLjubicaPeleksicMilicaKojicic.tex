@@ -1,0 +1,590 @@
+\documentclass[a4paper]{article}
+
+\usepackage{color}
+\usepackage{url}
+\usepackage{graphicx}
+\usepackage[utf8]{inputenc} 
+\usepackage[unicode]{hyperref}
+\hypersetup{colorlinks,citecolor=green,filecolor=green,linkcolor=blue,urlcolor=blue}
+\usepackage[english,serbian]{babel}
+
+\title{Asembler x86\_64 -- instrukcije op\v ste namene\\ \small{--- seminarski rad ---  \\Arhitektura i operativni sistemi}}
+\author{Ljubica Peleksi\'c i Milica Koji\v ci\' c}
+%\date{}
+\date{5.~novembar 2013.}
+
+\begin{document}
+
+\maketitle
+\abstract{Da bi bilo koji procesor mogao da se programira na asemblerskom jeziku, programer mora detaljno poznavati 
+njegovu arhitekturu skupa instrukcija. Shodno tome, ovde \' cemo se baviti arhitekturom x86\_64 i to: organizacijom
+memorije, na\v cinima adresiranja, a najvise skupom instrukcija. Instrukcije obi\v cno imaju jedan,
+dva ili tri operanda, kojima se mo\v ze pristupiti neposrednim, direktnim, registarskim, indeksnim 
+ili nekim drugim na\v cinom adresiranja. Neki ra\v cunari imaju veliki broj slo\v zenih na\v cina adresiranja.
+U op\v stem slu\v caju postoje instrukcije za preme\v stanje podataka, za binarne i unarne operacije, 
+uklju\v cuju\' ci i aritmeti\v cke i logi\v cke operacije, instrukcije za grananje, pozivanje procedura,
+rad u petlji, kao i ulazno-izlazne instrukcije. Tipi\v cne instrukcije preme\v staju re\v c iz memorije 
+u registar (ili obrnuto), sabiraju, oduzimaju, mno\v ze ili dele sadr\v zaj dva registra ili sadr\v zaj 
+registra i memorijske re\v ci, ili porede sadr\v zaj registara ili memorije. U narednim odeljcima razmotri\' cemo one koje 
+najvi\v se koristimo pri programiranju u asembleru x86\_64.}
+\tableofcontents
+
+\newpage
+
+
+\section{\textbf{UVOD}} 
+
+\subsection{\textbf{Asemblerski jezik}}
+
+Svaki ra\v cunar ima svoju arhitekturu skupa instrukcija (\textbf{Instruction Sat Architecture, ISA}) i ona obuhvata registre, 
+instrukcije i druge mogu\' cnosti vidljive programerima na niskom nivou. Ova arhitektura se naziva ma\v sinski jezik. 
+Program na ovom nivou apstrakcije je lista binarnih brojeva, po jedan za svaku instrukciju, koji saop\v stavaju koju 
+instrukciju treba izvr\v siti i sa kojim operandima. Medjutim, veoma je te\v sko programirati sa binarnim brojevima,
+pa svaki ra\v cunar ima i svoj asemblerski jezik, simboli\v cku predstavu arhitekture skupa instrukcija.
+Asemblerski jezik ili jednostavno asembler je ni\v zi simboli\v cki jezik, prilagodjen radu ra\v cunara.
+Binarni brojevi su sada zamenjeni mnemoni\v ckim oznakamama, tako da je ovaj programski jezik mnogo razumljiviji. 
+Osim kratkih re\v ci (ADD, SUB, MUL) koje se koriste za ma\v sinske instrukcije, asembleri dozvoljavaju kori\v s\' cenje 
+simboli\v ckih imena za konstante i oznaka koje se odnose na instrukcije i memorijske adrese. Kada se program napisan na 
+asemblerskom jeziku prosledi programu zvanom asembler, on ga pretvara u binarni program koji je pogodan za direktno 
+izvr\v savanje, na stvarnom hardveru \cite{Arhitektura}. \\ 
+\textbf {Za\v sto asembler?} \\
+\emph {Asembler je program programa, alat svih alata i on je ozbiljno oru\v zje u rukama pravog programera \cite{Arhitektura}.} \\ 
+Asemblerski jezik je najbli\v za forma komunikacije izmedju \v coveka i ma\v sine. Programi u asembleru se odlikuju
+mogu\' cno\v s\' cu slanja direktnih komandi procesoru kao i iskori\v s\' cavanju celog dijapazona ra\v cunarske 
+arhitekture. Koriste\' ci asembler, programer mo\v ze da ta\v cno prati protok podataka i izvr\v savanje programa.
+Programeri \v cesto koriste asembler za kriti\v cne delove programa, ali i  za prepravljanje koda za koji nemamo
+izvorni kod. Asemblerski kod \' ce naj\v ce\v s\' ce da se izvr\v sava mnogo br\v ze nego programi napisani u ostalim jezicima.
+Proizvodja\v ci hardvera, kao \v sto su Intel i AMD dodaju nove karakteristike svojim procesorima i ve\' cinom je jedini 
+na\v cin da im se pristupi preko asemblera \cite{Introduction}. \\
+
+\subsection{\textbf{Arhitektura x86\_64}}
+
+Tokom godina, programeri su koristili x86 asembler da bi pisali kod kriti\v cnih performansi. 64-bitni ra\v cunari su 
+zamenili 32-bitne pa se i sam asemblerski kod promenio. x64 je ime za 64-bitne nadogradnje, \textbf{Intelove} i \textbf{AMD}-ove, 32-bitne arhitekture
+skupa instrukcija. AMD je predstavio prvu verziju x64 koja se zvala x86\_64, a zatim su je preimenovali u AMD64. 
+Intel je svoju implementaciju nazvao IA-32e, a zatim EMT64. Postoje neznatne razlike izmedju dve verzije ali ve\' cina koda 
+radi na obe verzije. Treba razlikovati ovu arhitekturu od arhitekture IA-64 (64 bita Intel Itanium). x86\_64 je takodje
+poznata kao x64, x86-64 i AMD64 \cite{Wikipedia}.\\
+x86\_64 podrzava vece koli\v cine virtuelne i fizi\v cke memorije, dozvoljavaju\' ci programima da \v cuvaju ve\' ce
+koli\v cine podataka u memoriji. x86\_64 takodje ima 64-bitne registre op\v ste namene i mnoga druga pobolj\v sanja.
+U potpunosti je unazad kompatibilna sa 16-bitnom i 32-bitnom arhitekturom. Zadr\v zava se set instrukcija 16-bitne i 
+32-bitne arhitekture, ali uz dodatke. x86 arhitektura je pro\v sirila registre u 64-bitne na veoma sli\v can na\v cin 
+na koji su 16-bitni registri pro\v sireni u 32-bitne. Adresiranje se ne menja zna\v cajno u odnosu na 32-bitnu arhitekturu,
+samo se pro\v siruje na 64 bita. Arhitektura x86\_64 je kori\v s\' cena pri implementaciji procesora Pentium 4,
+Celeron D, Xeon, Pentium Dual-Core, Pentium Extreme Edition, Core 2, Core i3,i5, i7 \cite{Wikipedia}...
+
+\subsection{\textbf{Organizacija registara i na\v cini adresiranja}}
+
+U x86 asembleru postoji 9 primarnih registara: EAX, ECX, EDX, EBX, ESP, EIP, EBP, ESI i EDI. Svi oni mogu da \v cuvaju 32-bitne 
+vrednosti. Prva \v cetiri su registri op\v ste namene i koriste se (redom) kao akumulator, broja\v c, registar podataka i 
+bazni registar. Njihova glavna uloga je privremeno skladistenje podataka i adresa tokom izvr\v savanja programa.
+Drugih 5 registra su takodje registri op\v ste namene ali se ve\' cinom koriste kao pokaziva\v cki i indeksni registri.
+Prva dva su od posebnog zna\v caja pri izvr\v savanju programa. Pokaziva\v c steka (ESP) pokazuje na poslednji argument 
+koji je stavljen na stek. Va\v zno je znati da stek raste ka ni\v zim adresama. Drugi veoma va\v zan registar je
+pokaziva\v c instrukcija (EIP). On pokazuje na narednu instrukciju koju \' ce procesor da izvr\v si. Kako ovo povezujemo sa 
+x64 asemblerom? Svi ovi registri su, dakle, i dalje prisutni. Oni su, medjutim, pro\v sireni sa maksimalna 32 bita na 64.
+Kao rezultat, oni su sada poznati kao \textbf{RAX, RCX, RDX, RBX, RSP, RBP, RSI, RDI i RIP} registri. Drugim re\v cima, 
+E je zamenjeno sa R. Mada to nije u potpunosti ta\v cno. E u imenima registara je i dalje validno u x64 asembleru.
+Ono nam omogu\' cuje pristup pristup ni\v zem 32-bitnom delu registra. Isto tako, za RAX, RCX, RDX i RBX registre vazi da
+se uklanjanjem slova r moze pristupiti najnizim 16 bitova (tako da RAX bude AX npr.) ili nizim od tih 16 preko AL registra, 
+odnosno vi\v sim preko AH (dakle isto kao kod 32-bitnih registara). Kao dodatak, ovim 9 registrima, x86\_64 arhitektura dodaje
+registre op\v ste namene \textbf{R8 do R15}. \textbf{RFLAGS} registar skladi\v sti flegove; sadr\v zaj mu se menja u zavisnosti od rezultata 
+aritmeti\v ckih operacija. Formiran je dodavanjem vi\v sa 32 bita na registar EFLAGS. Takodje je va\v zno napomenuti 
+postojanje registara koji se koriste za operacije u pokretnom zarezu, (eng. floating-point registri). \\
+Za skoro svaku instrukciju neophodni su podaci bilo iz memorije, bilo iz registara.
+Ve\' cina instrukcije sadr\v zi dva operanda, odredi\v sni i izvori\v sni.\\
+Na primer: \textbf{MOV RAX,RBX} \\
+Prvi operand je odredi\v sni, a drugi izvori\v sni. Konstanta mo\v ze da bude izvori\v ste, tj. leva vrednost 
+ali ne i odredi\v ste. Odredjene instrukcije zahtevaju samo jedan operand: postupno uve\' cavanje, negiranje, pomeranje itd. 
+Na primer u instrukciji MUL samo registar RAX mo\v ze da bude odredi\v ste \cite{Introduction}: \\
+Na primer: \textbf {MUL RBX} \\
+
+Procesor sme\v sta brojeve po sistemu \textbf{little endian}, sto zna\v ci da se manje zna\v cajan deo re\v ci sme\v sta na ni\v zu 
+adresu. Na\v cini adresiranja su zapravo na\v cini na koje instrukcija mo\v ze da pristupi registrima ili memoriji. 
+Postoji vi\v se na\v cina adresiranja. Oni koji se naj\v ce\v s\' ce koriste su \cite{Arhitektura}:
+\begin{enumerate}
+\item {Neposredno}
+\item {Direktno}
+\item {Indirektno registarsko}
+\item {Registarko s pomerajem}
+\item {Registarko indeksno}
+\item {Registarsko indeksno s pomerajem}
+\item {Podrazumevano}
+\end{enumerate}
+
+\textbf{Neposredno adresiranje} je na\v cin adresiranja u kome je operand u instrukciji konstantan bajt ili re\v c. Na primer:\\
+\textbf {CMP RAX, 50} (poredi vrednost registra RAX sa konstantom 50) \\ \\
+\textbf{Direktno adresiranje} podrazumeva da je operand u instrukciji adresa podatka. Na primer:\\
+\textbf{ADD RAX, (20)} (dodaje registru RAX vrednost sa memorijske lokacije 20) \\ \\
+\textbf{Indirektno registarsko} zna\v ci da se adresa operanda nalazi u nekom od registara RBX, RSI ili RDI. U sva tri 
+slu\v caja operand se nalazi u segmentu za podatke. Kada se konstanta postavi ispred registra, adresa se pronalazi dodavanjem
+sadr\v zaja registra konstanti. Ovaj tip se naziva \textbf {registarsko adresiranje sa pomerajem}. Zgodan je za adresiranje 
+bitova. Na primer:\\
+\textbf{SUB [RDI + 4], RAX}  (bazna adresa se nalazi u RDI, uz pomeraj od 4; od te vrednosti se oduzima sadr\v zaj 
+registra RAX)\\ \\
+\textbf {Registarsko indeksno} podrazumeva da je u RDI po\v cetna adresa niza, a broja\v c u RCX. Na primer:\\
+\textbf{CMP RSI, [RDI + RCX]} \\ (poredi vrednost registra RSI sa vrednosti na adresi na koju pokazuje RDI+RCX)
+Poslednja dva tipa se mogu kombinovati u \textbf {registarsko indeksno s pomerajem}. Na primer: \\
+\textbf {SUB [RDI + 4 * RCX + 4], RAX} (pomeraj je 4 bajta, bazna adresa se nalazi u RDI, indeks u RCX, a faktor skaliranja
+je 4; vrednost na ovoj lokaciji se umanjuje za vrednost registra RAX). \\ \\
+Na kraju, neke instrukcije koriste \textbf {podrazumevano adresiranje} gde se operand ili operandi podrazumevaju. Na primer: \\
+\textbf{PUSH RAX} (stavlja sadr\v zaj registra RAX na stek tako \v sto smanjuje vrednost registra RSP, a zatim kopira sadr\v zaj
+registra RAX na lokaciju na koju sada ukazuje RSP. U instrukciji PUSH upotreba registra RSP se podrazumeva). \\ \\
+
+
+\section{\textbf{INSTRUKCIJE OP\v STE NAMENE}}
+
+%ARITMETICKE INSTRUKCIJE
+\subsection{\textbf{Aritmeti\v cke instrukcije}} 
+Aritmeti\v cke instrukcije izvr\v savaju aritmeti\v cke operacije i zahtevaju razli\v cit broj operanada,
+u zavisnosti od same operacije.
+Prvi operand je odredi\v sni i mora biti registar ili memorijska lokacija. Drugi operand mo\v ze biti ili
+memorijska lokacija, registar ili konstantna vrednost. Barem jedan od ova mora biti registar zato \v sto 
+operacije ne smeju da koriste memorijske lokacije kao oba operanda \cite{x86Assembly}. \\ \\
+\begin{enumerate}
+\item{Instrukcija \textbf{ADD} vr\v si \textbf{sabiranje} i ima dva operanda:} \\
+\textbf{ADD RAX, 4} (sabiramo vrednost registra RAX sa konstantom 4 i rezultat \' ce biti sme\v sten u registar RAX) \\
+\item{Instrukcija \textbf{SUB} vr\v si \textbf{oduzimanje} i ima dva operanda:} \\
+\textbf{SUB RBX, X}  (oduzimamo vrednost sa memorijske lokacije X od vrednosti registra RBX i rezultat sme\v stamo u RBX) \\ \
+\item{Instrukcija \textbf{ADC} vr\v si \textbf{sabiranje s prenosom} i ima dva operanda: }
+\textbf{ADC RAX, 4}  (sabiranje sa prenosom, vrednost eng. carry flag-a se dodaje na rezultat sabiranja) \\ 
+\item{Instrukcija \textbf{SBB} vr\v si \textbf{oduzimanje s pozajmicom} i ima dva operanda:}
+\textbf{SBB RBX, X}  (oduzimanje sa pozajmicom, vrednost eng. carry flag-a se oduzima od razlike operanada) \\ 
+\item {Razlikujemo dve instrukcije za mnozenje: \textbf{MUL} za neozna\v cene i \textbf{IMUL} za ozna\v cene brojeve. Instrukcija MUL ima samo jedan operand i taj operand se mno\v zi sa 
+sadr\v zajem registra  AL, AX, EAX ili RAX (u zavisnosti od \v sirine operanda). Rezultat se sme\v sta u registre AX, DX:AX,
+EDX:EAX, RDX:RAX (dvota\v cka ozna\v cava da se prvi registar odnosi na vi\v se bitove podataka). IMUL mo\v ze imati jedan 
+operand i u tom slu\v caju je analogna instrukciji MUL, ali mo\v ze imati i dva i tri operanda. Na primer:} \\
+\textbf{MUL RBX} (sadr\v zaj registra RAX se mno\v zi sa sadr\v zajem registra RBX i rezultat se sme\v sta u RDX:RAX)\\ 
+\item {\v Sto se deljenja ti\v ce, ovde takodje imamo dve instrukcije: \textbf{DIV} se odnosi na deljenje neozna\v cenih, 
+a \textbf{IDIV} na deljenje ozna\v cenih brojeva. Instrukcija DIV ima jedan operand. Sadr\v zaj 
+registra AX, DX:AX, EDX:EAX, RDX:RAX se deli vredno\v scu operanda koja je 8-bitna, 16-bitna, 32-bitna i 64-bitna i 
+koli\v cnik se sme\v sta (redom) u: AL, AX, EAX i RAX, a ostatak pri deljenju u AH, DX, EDX I RDX. IDIV je analogna 
+instrukciji DIV i nema ekstenzije kao IMUL. Na primer:} \\
+\textbf{DIV RCX} (sadr\v zaj registra RDX:RAX se deli sadr\v zajem registra RCX i koli\v cnik se sme\v sta u RAX 
+a ostatak u RDX) \\ 
+\item {Instrukcija \textbf{NEG}} vr\v si \textbf{negaciju} i ima jedan operand kome menja znak. Na primer: \\
+\textbf{NEG X} (vrednosti na memorijskoj lokaciji x je promenjen znak)\\ 
+\item {Instrukcije \textbf{INC} i \textbf{DEC} vr\v se (redom) \textbf{uvecavanje i smanjivanje argumenta za jedan} i imaju po jedan operand.
+Inkrementacija radi mnogo br\v ze nego \textbf {ADD ARG, 1}. Isto tako, dekrementacija radi mnogo br\v ze nego 
+\textbf{SUB ARG, 1}. Na primer:} \\
+\textbf{INC RDX} (uve\' cava vrednost registra RDX za 1)\\
+\textbf{DEC RDX} (smanjuje vrednost registra RDX za 1)\\ 
+\end{enumerate}
+
+%LOGICKE INSTRUKICJE
+\subsection{\textbf{Logi\v cke instrukcije}}
+Logi\v cke instrukcije izvode logi\v cke operacije nad operandima. Sve osim bitske negacije prihvataju dva operanda, 
+dok negacija prihvata jedan. Razlikujemo slede\' ce bitovske logi\v cke operacije \cite{x86Assembly}:
+\begin{enumerate}
+\item {\textbf{Bitovska konjukcija (AND): AND RDX, RCX}}
+\item {\textbf{Bitovska disjunkcija (OR): OR RDX, RCX}}
+\item {\textbf{Bitovska ekskluzivna disjunkcija (XOR): XOR RDX, RCX}}
+\item {\textbf{Bitovkska negacija (NOT): NOT RDX}}
+\end{enumerate}
+
+
+%INSTRUKCIJE ZA SIFTOVANJE I ROTACIJU
+\subsection{\textbf{Instrukcije za \v siftovanje i rotacije}}
+Sve instrukcije za \v siftovanje i rotacije prihvataju po jedan operand \cite{x86Assembly}. \\ 
+\begin{enumerate}
+\item{\textbf{Logi\v cke instrukcije za \v siftovanje}}\\
+Logi\v cko \v siftovanje se koristi za neozna\v cene brojeve.
+U slu\v caju logickog pomeranja udesno, krajnje desni bit se zanemaruje, a po\v cetni bit rezultata 
+se uvek popunjava nulom, a u slu\v caju logi\v ckog pomeranja ulevo, po\v cetni bit argumenta se zanemaruje, a na 
+zavr\v sna mesta se upisuje nula. 
+
+\begin{enumerate}
+\item{\textbf{\v Siftovanje udesno (SHR): SHR RDX}}
+\item{\textbf{\v Siftovanje ulevo (SHL): SHL RDX}}
+\end{enumerate}
+
+\item{\textbf{Aritmeti\v cke instrukcije za \v siftovanje}}\\
+Artimeti\v cko pomeranje se koristi za ozna\v cene brojeve u potpunom komplementu.
+U slu\v caju aritmeti\v ckog pomeranja udesno, krajnje desni bit se zanemaruje, a po\v cetni bit se popunjava
+vode\' cim bitom argumenta koji predstavlja znak. A \v sto se ti\v ce pomeranja ulevo, po\v cetni bit argumenta se 
+zanemaruje, dok se na zavr\v sno mesto upisuju nule.
+
+\begin{enumerate}
+\item{\textbf{\v Siftovanje u desno (SAR): SAR RAX}}
+\item{\textbf{\v Siftovanje u levo (SAL): SAL RAX}}
+\end{enumerate}
+
+\item{\textbf{Instrukcije za \v siftovanje sa prenosom}} \\
+Primenjujemo uobi\v cajeno logi\v cko \v siftovanje, s tim \v sto se bitovi koji se ina\v ce zanemaruju, \v salju u eng. carry 
+flag. Primer:
+
+\begin {enumerate}
+\item {\textbf{\v Siftovanje u desno sa prenosom (SCR): SCR RAX}}
+\item {\textbf{\v Siftovanje u levo sa prenosom (SCL): SCL RAX}}
+\end{enumerate}
+
+\item{\textbf{Instrukcije za rotaciju}} \\
+Rotacija udesno je \v siftovanje udesno, s tim \v sto bit koji gubimo sa po\v cetka vra\' camo na kraj, dok je rotacija
+ulevo siftovanje ulevo, sa vra\' canjem izgubljenog na kraj.
+\begin{enumerate}
+\item {\textbf{rotacija udesno (ROR): ROR RAX}}
+\item {\textbf{rotacija ulevo (ROL): ROL RAX}}
+\end {enumerate}
+\end{enumerate}
+
+%INSTRUKCIJE ZA TRANSFER PODATAKA
+\subsection{\textbf{Instrukcije za transfer podataka}}
+Kopiranje podataka sa jednog mesta na drugo je najosnovnije od svih operacija. Pod kopiranjem podrazumevamo stvaranje novog objekta koji ima 
+identi\v can raspored bitova kao original. Instrukcije za preme\v stanje podataka bi bilo bolje zvati instrukcije za dupliranje podataka, ali
+se izraz preme\v stanje podataka ve\' c previ\v se odoma\' cio. Postoje dva razloga zbog kojih se podaci kopiraju s jednog mesta na drugo. Jedan je 
+dodeljivanje vrednosti promenljivama, a drugi razlog je efikasnije pristupanje i kori\v s\' cenje (brojne instrukcije mogu da pristupe
+promenljivama samo ako se one nalaze u registrima) \cite{x86Assembly}. \\ 
+\begin{enumerate}
+\item{Instrukcija \textbf {MOV} kopira vrednost drugog operanda u prvi, pri \v cemu se nijedan fleg ne menja. Na primer:} \\
+\textbf{MOV RAX, 6} (kopiramo konstantu 6 u registar RAX)
+\item{Instrukcija \textbf {XCHG} za zamenu podataka zamenjuje vrednosti prvog i drugog operanda, pri \v cemu se takodje nijedan fleg ne menja. Na primer:} \\
+\textbf{XCHG RAX, RBX} (zamenjujemo vrednosti u registrima RAX i RBX) 
+\item{Takodje postoje instrukcije koje pri kopiranju drugog operanda u prvi, nepopunjena mesta u prvom argumentu popunjavaju nulama (instrukcija
+je korisna za kopiranje malih neozna\v cenih vrednosti u ve\' ci registar) ili znakom drugog argumenta (instrukcija je korisna za kopiranje malih 
+ozna\v cenih brojeva)}. Na primer:\\ 
+\textbf{MOVZ RAX, 5} (prvi slu\v caj)\\
+\textbf{MOVS RAX, 5} (drugi slu\v caj)
+\item{Instrukcija \textbf{MOVSB} nema nijedan operand i kopira jedan bajt sa lokacije koja se nalazi u RSI registru na lokaciju koja se nalazi u RDI. Instrukcija
+takodje ne menja flegove.}
+\item{\textbf{MOVSW} je instrukcija koja nema nijedan operand i kopira dva bajta (jednu re\v c) iz RSI u RDI.}
+\end{enumerate}
+
+%INSTRUKCIJE ZA KONTROLU TOKA
+\subsection{\textbf{Instrukcije za kontrolu toka}}
+U skoro svim programskim jezicima mo\v ze da se pri izvr\v savanju instrukcija menja njihov redosled, pa ni asembler nije izuzetak.
+Pokaziva\v c instrukcija (RIP) registar sadr\v zi adresu naredne instrukcije koja \' ce da se izvr\v si. Da bi se tok kontrole promenio, 
+programer mora da modifikuje vrednost registra RIP. Upravo tu, glavnu ulogu igraju instrukcije za kontrolu toka \cite{x86Assembly}.
+
+\begin{enumerate} %glavni begin
+
+\item{\textbf{Instrukcije za poredjenje}} %1
+	\begin{enumerate} 
+	\item{\textbf{TEST} je instrukcija koja izvr\v sava bitovsku konjukciju nad dva operanda i postavlja flegove, ali ne \v cuva rezultat Na primer:} \\
+	\textbf{TEST RAX, RBX} 
+	\item{\textbf{CMP} je instrukcija koja vr\v si oduzimanje izmedju dva operanda, postavlja flegove, ali ne \v cuva rezultat. Na primer:} \\
+	\textbf{CMP RAX, RBX}
+	\end {enumerate}
+
+
+\item{\textbf{Skokovi}} %2
+\begin{enumerate}
+\item{\textbf{Bezuslovni skok}}\\ 
+    Instrukcija \textbf{JMP} postavlja u registar RIP adresu naredne instrukcije koja se izvr\v sava. Na primer: \\
+	\textbf{JMP LOC} (ska\v ce na izvr\v savanje instrukcije koja se nalazi na adresi LOC)\\
+\item{\textbf{Skok ako je jednako}}\\
+    Instrukcija \textbf{JE} postavlja u RIP adresu naredne instrukcije, ako su operandi prethodne CMP instrukcije jednaki.\\ 
+	\textbf{MOV RCX, 5}\\
+	\textbf{MOV RDX, 5}\\
+	\textbf{CMP RCX, RDX}\\
+	\textbf{JE EQUAL}\\
+	\# ako se ne sko\v ci na labelu EQUAL, onda to zna\v ci da  5 i 5 nisu jednaki.\\
+	\textbf{EQUAL}:\\
+	\# ako se sko\v cilo ovde, onda to zna\v ci da su 5 i 5 jednaki. \\
+
+\item{\textbf{Skok ako nije jednako}}\\
+	Instrukcija \textbf{JNE} stavlja u RIP registar adresu naredne instrukcije, ako operandi prethodne CMP instrukcije nisu jednaki. \\
+
+\item{\textbf{Skok ako je ve\' ce}}\\
+	\begin{enumerate}
+	 \item{Instrukcija \textbf{JG} u registar RIP stavlja adresu naredne instrukcije, ako je prvi operand prethodne CMP instrukcije ve\' ci od drugog.
+	(izvodi se poredjenje ozna\v cenih brojeva).}\\
+	
+	\item {Instrukcija \textbf{JGE} stavlja u RIP adresu naredne instrukcije, ako je prvi operand prethodne CMP instrukcije ve\' ci ili jednak drugom
+	(izvodi se poredjenje ozna\v cenih brojeva).}\\
+
+	\item {Instrukcija \textbf{JA} stavlja u RIP adresu naredne instrukcije, ako je prvi operand prethodne CMP instrukcije ve\' ci od drugog.
+	(izvodi se poredjenje neozna\v cenih brojeva).}\\
+
+	\item {Instrukcija \textbf{JAE} stavlja u RIP adresu naredne instrukcije, ako je prvi operand prethodne CMP instrukcije ve\' ci ili jednak drugom
+	(izvodi se poredjenje neozna\v cenih brojeva).}\\
+	\end{enumerate}%skok ako je vece
+
+\item{\textbf{Skok ako je manje}}
+	\begin{enumerate}
+	\item{Instrukcija \textbf{JL} u registar RIP stavlja adresu naredne instrukcije, ako je prvi operand prethodne CMP instrukcije manji od drugog.
+	(izvodi se poredjenje ozna\v cenih brojeva).}\\
+	
+	\item{Instrukcija \textbf{JLE} stavlja u RIP adresu naredne instrukcije, ako je prvi operand prethodne CMP instrukcije manji ili jednak drugom
+	(izvodi se poredjenje ozna\v cenih brojeva).}\\
+
+	\item{Instrukcija \textbf{JB} stavlja u RIP adresu naredne instrukcije, ako je prvi operand prethodne CMP instrukcije manji od drugog.
+	(izvodi se poredjenje neozna\v cenih brojeva).}\\
+
+	\item{Instrukcija \textbf{JBE} stavlja u RIP adresu naredne instrukcije, ako je prvi operand prethodne CMP instrukcije manji ili jednak drugom
+	(izvodi se poredjenje neozna\v cenih brojeva).}\\
+	\end{enumerate}%skok ako je manje
+
+\item{\textbf{Skok ako postoji prekora\v cenje}} \\
+	Instrukcija \textbf{JO} u registar RIP stavlja adresu naredne instrukcije, ako je postavljen bit prekora\v cenja pri prethodnoj aritmeti\v ckoj operaciji.\\
+
+\item{\textbf{Skok u slu\v caju nule}}
+	\begin{enumerate}
+	
+	\item{Instrukcija \textbf{JNZ} u registar RIP stavlja adresu naredne instrukcije, ako nije postavljen eng. zero flag pri prethodnoj aritmeti\v ckoj operaciji.
+	JNZ instrukcija je identi\v cna instrukciji JNE.}\\
+
+	\item{Instrukcija \textbf{JZ} stavlja u RIP adresu naredne instrukcije,ako je postavljen eng. zero flag pri prethodnoj aritmeti\v ckoj operaciji.
+	JZ je identi\v cna JE.}\\
+	\end{enumerate}%skok u slucaju nule
+
+\end{enumerate} %kraj za skokove
+
+
+
+\item{\textbf{Instrukcije za poziv procedura}} \\
+Instrukcija \textbf{CALL} bezuslovno ska\v ce na adresu koja je zadata kao operand, ali prethodno stavlja na vrh steka
+adresu povratka iz RIP registra.\\
+Instrukcija \textbf{RET} zavr\v sava potrogram, ona skida sa steka povratnu adresu, stavlja je u RIP registar 
+i vr\v si bezuslovan skok na tu adresu.
+Vrlo je va\v zno voditi ra\v cuna da ako se na stek postavljaju neki drugi podaci, da se oni pre poziva RET instrukcije
+skinu sa steka, kao i da se gre\v skom ne izmeni sadr\v zaj povratne adrese na steku.
+
+
+%INSTRUKCIJE BROJACKE PETLJE
+\item{\textbf{Instrukcije broja\v cke petlje}}\\
+Sve instrukcije primaju jedan argument koji je adresa memorijske lokacije, umanjuju vrednost 
+registra RCX i ska\v cu na zadatu adresu u zavisnosti od uslova.
+\begin{enumerate}
+
+\item{Instrukcija \textbf{LOOP}} \\
+	Ima samo jedan argument koji predstavlja adresu memorijske lokacije.
+	Ona umanjuje vrednost registra RCX za jedan i ska\v ce na zadatu adresu sve dok vrednost registra RAX ne bude nula.
+	LOOP ne postavlja flegove. Na primer: \\ \\
+	
+	\textbf{MOV RCX, 5} \\
+	\textbf{START\_LOOP:} \\
+	\#kod bi se ovde izvr\v savao 5 puta\\
+	\textbf{LOOP START\_LOOP:} \\ \\
+
+\item{Instrukcija \textbf{LOOPX}}\\
+	Ove LOOP instrukcije umanjuju vrednost registra RCX i ska\v ce na adresu zadatu operandom
+	ako je njihov uslov zadovoljen, tj. ako je postavljen odgovaraju\' ci fleg.
+	\begin{enumerate}
+	\item{\textbf{LOOPE}} ska\v ce ako je jednako
+	\item{\textbf{LOOPZ}} ska\v ce ako je nula
+	\item{\textbf{LOOPNE}} ska\v ce ako nije jednako
+	\item{\textbf{LOOPNZ}} ska\v ce ako nije nula
+	\end{enumerate}
+\end{enumerate} %instrukcije brojacke petlje
+
+
+\item{Instrukcije \textbf{ENTER} i \textbf{LEAVE}} \\
+Instrukcija \textbf{ENTER} pravi stek okvir sa odredjenom koli\v cinom 
+prostora alociranom na steku. Obi\v cno se taj prostor rezervi\v se za lokalne promenljive 
+koje se koriste u procedurama. Na primer: \\
+\textbf{ENTER 0,0} (u ovom slu\v caju se ne rezervise prostor za lokalne promenljive na steku)\\
+Instrukcija \textbf{LEAVE} uni\v stava trenutni stek okvir i restaurira prethodni okvir. Na primer: \\
+\textbf{MOV RSP, RBP}\\
+\textbf{POP RBP}\\ \\
+Sadr\v zaj RSP registra je adresa vrha steka, ali se on tokom rada funkcije mo\v ze promeniti, sto nam u tom 
+slu\v caju ote\v zava adresiranje argumenata funkcije. Standardni na\v cin pristupa argumentima funkcije je preko registra RBP.
+Po ulasku u funkciju, ovaj registar se stavlja na stek (da bi se njegova vrednost sa\v cuvala) i u njega se kopira vrednost
+registra RSP, tj. adresa vrha steka \' ce nam se sad nalaziti i u RBP registru. Sadr\v zaj RBP registra se posle ne menja 
+u toku rada funkcije i preko njega mi pristupamo njenim argumentima. Na vrhu steka je sadr\v zaj RBP registra, ispod njega 
+je adresa povratka iz funkcije, a onda redom argumenti funkcije kojima se pristupa tako \v sto na adresu RBP dodamo 
+odredjen broj bajtova u zavisnosti gde se na steku ti argumenti nalaze (jer stek raste ka ni\v zim adresama). Npr. ako 
+ho\' cemo da pristupimo prvom argumentu funkcije dodajemo 8 bajtova na RBP, za drugi argument dodajemo 12 bajtova itd.
+Na kraju funkcije mora se skinuti sadr\v zaj registra RBP sa steka i tek onda mo\v ze da se pozove RET instrukcija.
+Gore navedenim naredbama postavili smo sadr\v zaj RBP registra u registar RSP (u kom se \v cuva adresa vrha steka) i 
+skinuli registar RBP sa steka kako bi RET instrukcija skinula povratnu adresu i kako bi program mogao da
+nastavi da se izvr\v sava od te adrese.
+
+%DRUGE INSTRUKCIJE KONTROLE
+\item{\textbf{Druge instrukcije kontrole}}
+\begin{enumerate}
+\item{\textbf{HLT} instrukcija zaustavlja procesor} 
+\item{\textbf{NOP} zna\v ci da nema operacije. Ova instrukcija ne radi nista, tj. samo tro\v si instrukcioni ciklus.\v Cesto je zamenjuje instrukcija: \textbf{XCHG RAX, RAX.}} 
+\item{\textbf{LOCK} instrukcija isti\v ce procesorov signal LOCK koji je istaknut tokom operacije koja ide uz instrukciju.}
+\item{\textbf{WAIT} instrukcija \v ceka da procesor zavr\v si svoju poslednju operaciju.} \\
+\end{enumerate}
+
+
+\end{enumerate} %instrukcija kontrole toka
+
+
+
+%INSTRUKCIJE ZA RAD SA STEKOM
+\subsection{\textbf{Instrukcije za rad sa stekom}}
+Instrukcije primaju po jedan argument, osim instrukcija PUSHA i POPA koje nemaju argumente \cite{x86Assembly}.
+\begin{enumerate}
+\item{\textbf{PUSH}}\\
+	Ova instrukcija smanjuje za 1 pokaziva\v c na stek i podatak koji se nalazi u argumentu stavlja na lokaciju na koju pokazuje pokaziva\v c na stek.
+\item{\textbf{POP}}\\
+	Ova instukcija stavlja podatke koji se nalaze na lokaciji na koju pokazuje pokaziva\v c na stek u argument, a zatim povecava pokaziva\v c na stek za 1.\\ \\
+	\textbf{MOV RAX, 5}\\
+	\textbf{MOV RBX, 6}\\
+	\textbf{PUSH RAX} (posle ove instrukcije, stek bi bio: [5])\\    
+	\textbf{PUSH RBX} (posle ove instrukcije, stek bi bio: [6] [5])\\
+	\textbf{POP RAX}  (ova instrukcija vrednost koja je poslednja stavljena na stek[6], kopira u RAX. Posle ove operacije, stek bi bio: [5])\\
+	\textbf{POP RBX} (vrednost registra RBX bi bila 5, a stek bi bio prazan)\\
+\item{\textbf{PUSHF}}\\
+	Ova instrukcija smanjuje pokaziva\v c na stek za 1, a zatim na lokaciju na koju pokazuje pokaziva\v c na stek, stavlja sadr\v zaj fleg registra.
+\item{\textbf{POPF}}\\
+	Ova instrukcija u fleg regitar stavlja sadrzaj memorijske adrese na koju pokazuje pokaziva\v c na stek, a zatim pokaziva\v c na stek uve\' cava za 1.
+\item {Instrukcijama \textbf{PUSHA} i \textbf{POPA} se mogu brzo sa\v cuvati svi registri op\v ste namene}
+
+\end{enumerate}
+
+
+%INSTRUKCIJE ZA RAD SA FLEGOVIMA 
+\subsection{\textbf{Instrukcije za rad sa fleg-ovima}}
+Dok fleg registar slu\v zi da prijavi rezultat izvr\v senih instrukcija (prekora\v cenje, prenos itd.),
+takodje sadr\v zi i flegove koji uti\v cu na operacije procesora. Ovi flegovi bivaju postavljeni i poni\v steni 
+posebnim instrukcijama \cite{x86Assembly}.
+\begin{enumerate}
+
+\item{\textbf{Fleg za prekide}} govori procesoru treba li ili ne da prihvati hardverski prekid.
+	\begin{enumerate}
+	\item{\textbf{STI}}\\
+	Ova instrukcija postavlja fleg za prekide; u tom slu\v caju procesor prihvata zahtev za prekid.
+	\item{\textbf{CLI}}\\ 
+	Ova instrukcija poni\v stava fleg za prekide.
+	\end{enumerate}
+	
+\item{\textbf{Fleg za prenos}} se obi\v cno postavlja nakon aritmeti\v ckih instrukcija, ali mo\v ze biti postavljen ili poni\v sten i ru\v cno.
+	\begin{enumerate}
+	\item{\textbf{STC}}\\
+	Ova instrukcija postavlja fleg za prenos.
+	\item{\textbf{CLC}}\\ 
+	Ova instrukcija poni\v stava fleg za prenos.
+	\item{\textbf{CMC}}\\
+	Ova instrukcija komplementira fleg za prenos.
+	\end{enumerate}
+	
+\item{\textbf{Ostali flag-ovi}}
+	\begin{enumerate}
+	\item{\textbf{SAHF}}\\
+	Ova instrukcija \v cuva sadr\v zaj AH registra u ni\v zim bajtovima fleg registra.
+	\item{\textbf{LAHF}}\\ 
+	Ova instrukcija stavlja u AH registar ono \v sto se nalazi u ni\v zim bajtovima fleg registra.
+	\end{enumerate}
+
+\end{enumerate} %inst za rad sa flagovima
+
+
+%ULAZNO-IZLAZNE INSTRUKCIJE
+\subsection{\textbf{Ulazno-izlazne instrukcije}}
+Instrukcije primaju po dva operanda \cite{x86Assembly}.
+\begin{enumerate}
+\item{\textbf{IN}}\\
+Instrukcija IN skoro uvek radi sa operandima AX i DX (tj. EAX, EDX ili RAX, RDX). DX \v cesto drzi adresu porta za \v citanje, a AX prima podatke od porta.
+U za\v sti\' cenom re\v zimu operativnih sistema, IN instrukcija je zaklju\v cana, pa je obi\v cni korisnici ne mogu koristiti.\\
+\item{\textbf{OUT}}\\
+Instrukcija OUT je veoma sli\v cna instrukciji IN. OUT stavlja podatke iz registra koje je u prvom operandu, na port dat u drugom operandu. U za\v sti\' cenom
+re\v zimu, instrukcija OUT je zaklju\v cana, pa ni nju obi\v cni korisnici ne mogu koristiti.\\
+\end{enumerate} %Ulazno\izlazne instrukcije
+
+
+%SISTEMSKE INSTRUKCIJE
+\subsection{\textbf{Sistemske instrukcije}}
+\begin{enumerate}
+\item{\textbf{SYSENTER}}\\
+Ova instrukcija uvodi procesor u za\v sti\' ceni re\v zim.
+\item{\textbf{SYSEXIT}} \\
+Ova instrukcija izvla\v ci procesor iz za\v sti\' cenog re\v zima i uvodi ga u re\v zim za korisnika.
+\end{enumerate} %Sistemske instrukcije
+
+\subsection{\textbf{Instrukcije za generisanje prekida}}
+Sistem prekida predstavlja jedan od mehanizama za upravljanje tokom rada procesora. U osnovne
+uloge sistema prekida spadaju komunikacija sa U-I uredjajima i upotreba osnovnih usluga operativnog sistema.
+Prekidi se mogu izazvati hardverski ili softverski. Kod procesora x86 \textbf{INT}
+je instrukcija koja poziva odgovaraju\' cu prekidnu proceduru. Ima jedan operand - broj prekida. 
+Kada se opslu\v zivanje prekida dovr\v si, program nastavlja sa izvr\v savanjem od mesta na kom je 
+prekinut \cite{x86Assembly}. Na primer:\\
+\textbf{INT 0x0A} (poziva prekid broj 10) 
+
+
+\section{\textbf{ZAKLJU\v CAK}}
+
+Pri samom u\v cenju asemblera, ono od \v cega kre\' cemo jeste zapravo u\v cenje o skupu instrukcija. 
+Ve\' cina x86 instrukcija je validna u 64-bitnoj nadogradnji, s tim da su neke retko kori\v s\' cene 
+instrukcije izba\v cene iz upotrebe, a pridodate su nove kao na primer \cite{Wikipedia2}: \\
+\begin{enumerate}
+\item{\textbf{CDQE}} koja konvertuje eng. dword (EAX) u eng. qword (RAX).
+\item{\textbf{CQO}} koja konvertuje eng. qword (RAX) u eng. oword (RDX:RAX).
+\item{\textbf{MOVSQ}} koja kopira qword iz RSI registra u RDI.
+\item{\textbf{CMPSQ}} koja poredi qword iz RDI sa RAX registrom.
+\item{\textbf{SCASQ}} koja u\v citava qword u RDI, a zatim uporedjuje qword iz RDI sa RAX registrom.
+\item{\textbf{LODSQ}} koja popunjava RAX registar sa qword-om iz RSI registra.
+\item{\textbf{STOSQ}} koja skladi\v sti qword u RDI iz RAX registra.
+\item{\textbf{MOVSXD}} koja pro\v siruje eng. dword u qword tako \v sto preostala mesta popunjava znakom dword-a.
+\item{\textbf{JRCXZ}} koja ska\v ce ako je RCX nula.
+\item{\textbf{POPFQ}} koja skida sa steka RFLAGS registar.
+\item{\textbf{PUSHFQ}} koja stavlja na stek RFLAGS registar.
+\item{\textbf{IRETQ	}} 64-bitni povratak iz prekida.	
+\end{enumerate}
+
+Srce svakog ra\v cunara je skup instrukcija koje mo\v ze da izvr\v sava. 
+Da bismo stvarno razumeli ra\v cunar, neophodno je da prvo dobro razumemo njegov skup instrukcija.
+Nije retko da ih ra\v cunar u svom repertoaru ima i preko 200. Ovde su prikazane one koje se naj\v ce\v s\' ce koriste 
+i predstavljaju dobru osnovu za dalje i detaljnije bavljenje istim.
+
+\newpage
+\addcontentsline{toc}{section}{Literatura}
+\appendix
+\bibliography{seminarski} 
+\bibliographystyle{plain}
+
+
+
+\end{document}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

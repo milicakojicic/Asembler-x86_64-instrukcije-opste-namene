@@ -1,0 +1,339 @@
+\documentclass[hyperref={pdfpagelabels=false}]{beamer}
+\setbeamerfont{structure}{family=\rmfamily,shape=\itshape} 
+\usecolortheme[named=purple]{structure}
+\usetheme{Malmoe}
+\setbeamertemplate{items}[ball] 
+\setbeamertemplate{blocks}[rounded][shadow=true] 
+\usepackage{lmodern}
+
+\title{\textbf Asembler x86\_64 -- instrukcije op\v ste namene\\ \small{--- seminarski rad ---  \\Arhitektura i operativni sistemi}}   
+\author{Ljubica Peleksi\v c i Milica Koji\v ci\' c} 
+\date{\today} 
+
+\begin{document}
+%POCETAK PREZENTACIJE I STVARANJE SLAJDA SA NASLOVOM I SADRZAJEM
+	\begin{frame}
+		\titlepage
+	\end{frame} 
+
+ 
+ %UVODNI DEO PREZENTACIJE
+\section{Uvod} 
+%ASEMBLERSKI JEZIK
+\subsection{Asemblerski jezik}
+
+	\begin{frame}
+		\frametitle{Asemblerski jezik} 
+		\begin{itemize}
+			\pause
+			\item Svaki ra\v cunar ima svoju arhitekturu skupa instrukcija (Instruction Sat Architecture,
+			ISA)koja se naziva \textbf{ma\v sinski jezik}\pause 
+			\item Asemblerski jezik je simboli\v cka predstava te arhitekture\pause
+			\item Binarni brojevi iz ma\v sinskog jezika su sada zamenjeni mnemoni\v ckim oznakama\pause
+			\item Osim kratkih re\v ci(ADD, SUB, MUL) koje se koriste za ma\v sinske instrukcije, asembleri dozvoljavaju
+			kori\v s\' cenje simboli\v ckih imena za konstante i oznaka koje se odnose na
+			instrukcije i memorijske adrese
+			\end{itemize}
+	\end{frame}
+	
+	\begin{frame}[fragile]
+		\frametitle{Za\v sto asembler?} 
+			\pause
+			\verb|"Asembler je program programa, alat svih alata i on je ozbiljno oruzje u rukama pravog programera"|\pause
+		\begin{itemize} 
+			\item Najbli\v za forma komunikacije izmedju \v coveka i ma\v sine\pause
+			\item Prepravljanje koda za koji nemamo izvorni kod\pause
+			\item Pisanje koda kriti\v cnih performansi\pause
+			\item Pristupanje novim karakteristikama,pre nego \v sto ih uvedu u kompajler
+		\end{itemize}
+	\end{frame}
+
+%ARHITEKTURA
+\subsection{Arhitektura x86-64}
+	\begin{frame}
+		\frametitle{Arhitektura x86-64} 
+		\pause
+		\begin{itemize} 
+			\item 64-bitni ra\v cunari zamenjuju 32-bitne \pause
+			\item x64-ime za Intelovu i AMD-ovu nadogradnju 32-bitne arhitekture skupa instrukcija \pause
+			\item AMD-ova prva verzija x64 se zvala x86-64, a zatim su je preimenovali u AMD64\pause
+			\item Intel je svoju implementaciju nazvao IA-32e, a zatim EMT64\pause
+			\item Ova arhitektura:\pause
+			\begin{itemize}
+				\item ima ve\' ce koli\v cine virtuelne i fizi\v cke memorije\pause
+				\item ima 64-bitne registre\pause
+				\item potpuno je unazad kompatibilna sa 16-bitnom i 32-bitnom arhitekturom\pause
+				\item zadr\v zava set instrucija skoro u potpunosti\pause
+				\item ima sli\v cne na\v cine adresiranja
+			\end{itemize}
+		\end{itemize}
+	\end{frame}
+
+	
+%REGISTRI&ADRESIRANJA
+\subsection{Organizacija registara i na\v cini adresiranja}
+	%ORGANIZACIJA REGISTARA
+	\begin{frame}[fragile]
+		\frametitle{Organizacija registara}
+		\begin{itemize}
+			\item \pause Registri se u odnosu na one iz 32-bitnog asemblera pro\v siruju sa 32 na 64 bita\pause
+			\item U 64-bitnoj arhitekturi se i dalje koriste 32-bitni,16-bitni i 8-bitni registri\pause
+			\item
+				\verb|U x86 asembleru postoji 8 primarnih registara: RAX(akumulator), RCX(brojac),RDX(registar podataka),RBX(bazni registar),RSP(pokazivac na stek),|
+				\verb|RBP(pokazivac na narednu instrukciju) RSI i RDI.|\pause
+			\item Floating-point registri\pause
+			\item Registar RFLAGS je pro\v sirenje EFLAGS i kao i on,skaldi\v sti flagove,a sadr\v zaj se menja u zavisnosti od rezultata aritmeti\v ckih operacija.\pause
+		\end{itemize}
+	\end{frame}
+	
+	%NACINI ADRESIRANJA
+	\begin{frame}
+		\frametitle{Na\v cini adresiranja}
+		\begin{itemize}
+		\item \pause Na\v cini adresiranja su zapravo na\v cini na koje instrukcija mo\v ze da pristupi registrima ili memoriji\pause
+		\item Na\v cini adresiranja:
+			\begin{itemize}
+				\item Neposredno adresiranje-operand u instrukciji je konstantan bajt ili re\v c \pause
+				\item Direktno adresiranje-operand u instrukciji je adresa podatka \pause
+				\item Indirektno registarsko-adresa operanda nalazi u nekom od registara RBX, RSI ili RDI.\pause
+				\item Registarsko aresiranje sa pomerajem-konstanta se postavi ispred registra, adresa se pronalazi dodavanjem sadr\v zaja registra konstanti.\pause
+				\item Registarsko indeksno podrazumeva da je u RDI po\v cetna adresa niza, a broja\v c u  RCX.\pause
+				\item Registarsko indeksno sa pomerajem-kombinacija prethodna dva
+			\end{itemize}
+			\pause
+		\end{itemize}
+	\end{frame}
+	
+	
+	
+%DEO SA INSTRUKCIJAMA
+\section{Instrukcije op\v ste namene}
+	%ARITMERICKE INSTRUKCIJE
+	\begin{frame}
+		\frametitle{Aritmeti\v cke instrukcije} 
+		\begin{itemize}
+			\item \pause Instrukcija ADD vr\v si sabiranje i ima dva operanda: \pause \\
+					ADD RAX, 4 \pause
+			\item Instrukcija SUB vr\v si oduzimanje i ima dva operanda: \pause \\
+					SUB RBX, x \pause
+			\item Instrukcija ADC vr\v si sabiranje s prenosom i ima dva operanda:\pause \\
+					ADC RAX, 4 \pause
+			\item Instrukcija SBB vr\v si oduzimanje s pozajmicom i ima dva operanda:\pause \\
+					SBB RBX, x \pause
+			\item Instrukcija NEG vr\v si negaciju i ima jedan operand kome menja znak. \pause \\
+					NEG X 
+		\end{itemize}
+	\end{frame}
+	
+	\begin{frame}
+		\frametitle{Aritmeti\v cke instrukcije}
+		\begin{itemize}
+			\item \pause Instrukcije INC i DEC vr\v se (redom) uvecavanje i smanjivanje argumenta za jedan i imaju po jedan operand. \pause \\
+							INC RDX (uve\' cava vrednost registra RDX za 1) \pause \\
+							DEC RDX (smanjuje vrednost registra RDX za 1) \pause
+			\item Razlikujemo dve instrukcije za mno\v zenje: MUL za neozna\v cene i IMUL za ozna\v cene brojeve. Instrukcija MUL ima samo jedan operand a 
+					IMUL mo\v ze imati jedan operand i u tom slu\v caju je analogna instrukciji MUL, ali mo\v ze imati i dva i tri operanda.\pause \\
+					MUL RBX \pause 
+			\item Rezlikujemo dve instrukcije za deljenje: DIV se odnosi na deljenje neozna\v cenih, a IDIV na deljenje ozna\v cenih brojeva; Instrukcija
+					DIV ima jedan operand.IDIV je analogna instrukciji DIV.\pause \\
+					DIV RCX 
+		\end{itemize}
+	\end{frame}
+	
+	%LOGICKE INSTRUKCIJE
+	\begin{frame}[fragile]
+		\frametitle{Logi\v cke instrukcije}
+		\begin{itemize}
+			\item \pause Instrukcija AND vr\v si bitovsku konjukciju i ima dva operanda:\pause
+			 \\ AND RDX, RCX\pause
+			\item Instrukcija OR vr\v si bitovsku disjunkciju i ima dva operanda: \pause
+			 \\ OR RDX, RCX \pause
+			\item Instrukcija XOR vr\v si bitovsku ekskluzivnu disjunkciju i ima dva operanda:\pause
+			 \\ XOR RDX, RCX \pause
+			\item Instrukcija NOT vr\v si bitovksku negaciju i ima jedan operand: \pause
+			 \\ NOT RDX
+		\end{itemize}
+	\end{frame}
+	
+	%INSTRUKCIJE ZA SIFTOVANJE I ROTACIJU
+	\begin{frame}
+		\frametitle{Instrukcije za \v siftovanje i rotaciju}
+		\begin{itemize}
+			\item \pause Logi\v cko \v siftovanje \pause
+				\begin{itemize}
+					\item Instrukcija SHR vr\v si \v siftovanje udesno i ima jedan operand\pause
+					\item Instrukcija SHL vr\v si \v siftovanje ulevo i ima jedan operand\pause
+				\end{itemize}
+			\item Artimeti\v cko \v siftovanje
+				\begin{itemize}
+					\item Instrukcija SHR vr\v si \v siftovanje udesno i ima jedan argument \pause
+					\item Instrukcija SHL vr\v si \v siftovanje ulevo i ima jedan argument \pause
+				\end{itemize}
+			\item Instrukcije za \v siftovanje sa prenosom
+			\begin{itemize}
+					\item Instrukcija SCR vr\v si \v siftovanje udesno sa prenososm i ima jedan argument\pause
+					\item Instrukcija SCL vr\v si \v siftovanje ulevo sa prenososm i ima jedan argument\pause
+				\end{itemize}
+			\item Instrukcije za rotaciju
+			\begin{itemize}
+					\item Instrukcija ROR vr\v si rotaciju udesno i ima jedan operand\pause
+					\item Instrukcija ROL vr\v si rotaciju ulevo i ima jedan operand 
+				\end{itemize}
+			
+		\end{itemize}
+	\end{frame}
+
+	%INSTRUKCIJE ZA TRANSFER PODATAKA
+	\begin{frame}
+		\frametitle{Instrukcije za transfer podataka} 
+		\begin{itemize}
+			\item \pause Instrukcija MOV kopira vrednost drugog operanda u prvi pri \v cemu se nijedan fleg ne menja \pause
+			\item Instrukcija XCHG zamenjuje vrednosti prvog i drugog operanda, pri \v cemu se takodje nijedan fleg ne menja\pause
+			\item Instrukcije pri kopiranju drugog operanda u prvi nepopunjena mesta u prvom argumentu popunjavaju nulama ili znakom drugog argumenta:\pause
+			\item Instrukcija MOVSB nema nijedan operand i kopira jedan bajt sa lokacije koja se nalazi u RSI registru na lokaciju koja se nalazi u RDI.
+			Instrukcija takodje ne menja flegove
+			\item MOVESW je instrukcija koja nema nijedan operand i kopira dva bajta (jednu re\v c) iz RSI u RDI
+		\end{itemize}
+	\end{frame}
+
+	%INSTRUKCIJE ZA KONTROLU TOKA
+	
+	%PRVI SLAJD 
+	\begin{frame}
+		\frametitle{Instrukcije za kontrolu toka}
+		\begin{itemize}	
+			\item \pause Instrukcije za poredjenje \pause
+				\begin{itemize}
+					\item TEST je instrukcija koja izvr\v sava bitovski konjukciju nad dva operanda i postavlja flegove, ali ne \v cuva rezultat \pause
+					\item CMP je instrukcija koja vr\v si oduzimanje izmedju dva operanda,postavlja flegove, ali ne \v cuva rezultat \pause
+				\end{itemize}
+			
+			\item Instrukcije za poziv procedura\pause
+				\begin{itemize}
+					\item Instrukcija CALL bezuslovno ska\v ce na adresu koja je zadata kao operand, ali prethodno stavlja na vrh steka adresu povratka iz RIP
+					registra \pause
+					\item Instrukcija RET zavr\v sava potrogram, ona skida sa steka povratnu adresu, stavlja je u RIP registar i vr\v si bezuslovan skok na tu adresu.
+				\end{itemize}
+		\end{itemize}
+	\end{frame}
+			
+	%DRUGI SLAJD	
+	\begin{frame}
+		\frametitle{Instrukcije za kontrolu toka}
+		Skokovi
+		\begin{itemize}
+			\item Bezuslovni skok - JMP 
+			\item Skok ako je jednako - JE
+			\item Skok ako nije jednako - JNE
+			\item Skok ako je ve\' ce - JG,JA i JGE,JAE
+			\item Skok ako je manje - JL,JB i JLE,JBE
+			\item Skok ako postoji prekora\v cenje - JO
+			\item Skok u slu\v caju nule - JNZ i JZ		
+		\end{itemize}
+	\end{frame}
+	
+	%TRECI SLAJD
+	\begin{frame}
+		\frametitle{Instrukcije za kontrolu toka}
+		\begin{itemize}
+			\item Instrukcije broja\v cke petlje\pause
+				\begin{itemize}
+					\item Instrukcija LOOP ima samo jedan argument koji predstavlja adresu memorijske lokacije. Ona umanjuje vrednost registra RCX za jedan i ska\v ce
+					na zadatu adresu sve dok vrednost registra RAX ne bude nula.LOOP ne postavlja flegove \pause
+					\item Instrukcija LOOPX umanjuje vrednost registra RCX i ska\v ce na adresu zadatu operandom ako je njen uslov zadovoljen, tj. ako je postavljen
+					odgovaraju\v ci fleg:
+						\begin{itemize}
+							\item LOOPE ska\v ce ako je jednako
+							\item LOOPZ ska\v ce ako je nula
+							\item LOOPNE ska\v ce ako nije jednako
+							\item LOOPNZ ska\v ce ako nije nula
+						\end{itemize}
+				\end{itemize}
+		\end{itemize}
+	\end{frame}
+				
+	%CETVRTI SLAJD			
+	\begin{frame}
+		\frametitle{Instrukicje za kontrolu toka}
+		\begin{itemize}
+			\item Instrukcije ENTER i LEAVE\pause
+				\begin{itemize}
+					\item Instrukcija ENTER pravi stek okvir sa odredjenom koli\v cinom prostora alociranom na steku. Obi\v cno se taj prostor rezervi\v se za 
+					lokalne promenljive koje se koriste u procedurama \pause
+					\item Instrukcija LEAVE uni\v stava trenutni stek okvir i restaurira prethodni okvir \pause
+				\end{itemize}
+				
+			\item Druge instrukcije kontrole\pause
+				\begin{itemize}
+					\item HLT instrukcija zaustavlja procesor \pause
+					\item NOP zna\v ci da nema operacije. Ova instrukcija ne radi nista, tj. samo tro\v si instrukcioni ciklus \pause
+					\item LOCK instrukcija isti\v ce procesorov signal LOCK koji je istaknut tokom operacije koja ide uz instrukciju\pause
+					\item WAIT instrukcija ˇceka da procesor zavr\v si svoju poslednju operaciju
+				\end{itemize}
+		\end{itemize}
+	\end{frame}
+	
+	%INSTRUKICJE ZA RAD SA STEKOM
+	\begin{frame}
+		\frametitle{Instrukcije za rad sa stekom}
+		\begin{itemize}
+			\item \pause Instrukcija PUSH smanjuje za 1 pokaziva\v c na stek i podatak koji se nalazi u argumentu stavlja na lokaciju na koju pokazuje 
+			pokaziva\v c na stek:\\ \pause
+			PUSH EAX \pause
+			\item Instukcija POP stavlja podatke koji se nalaze na lokaciji na koju pokazuje pokaziva\v c na stek u argument,a zatim povecava pokaziva\v c
+			na stek za 1:\pause \\
+			POP EAX
+			\item Instrukcija PUSHF smanjuje pokaziva\v c na stek za 1 a zatim na lokaciju na koju pokazuje pokaziva\v c na stek,stavlja sadr\v zaj flag 
+			registra\pause
+			\item Instrukcija POPF u flag regitar stavlja sadr\v zaj memorijske adrese na koju pokazuje pokaziva\v c na stek,a zatim pokaziva\v c na stek 
+			uve\' cava za 1\pause
+		\end{itemize}
+	\end{frame}
+	
+	%INSTRUKCIJE ZA RAD SA FLAGOVIMA
+	\begin{frame}
+		\frametitle{Instrukcije za rad sa flagovima} 
+		\begin{itemize}
+			\item Fleg za prekide\pause 
+				\begin{itemize}
+					\item Instrukcija STI postavlja fleg za prekide; u tom slu\v caju procesor prihvata zahtev za prekid\pause
+					\item Instrukcija CLI poni\v stava fleg za prekide\pause
+				\end{itemize}
+			\item Fleg za prenos
+				\begin{itemize}
+					\item Instrukcija STC postavlja fleg za prenos\pause
+					\item Instrukcija CLC poni\v stava fleg za prenos\pause
+					\item Instrukcija CMC komplementira fleg za prenos\pause
+				\end{itemize}
+			\item Ostali flag-ovi
+				\begin{itemize}
+					\item Instrukcija SAHF \v cuva sadr\v zaj AH registra u ni\v zim bajtovima fleg registra\pause
+					\item Instrukcija LAHF stavlja u AH registar ono \v sto se nalazi u ni\v zim bajtovima fleg registra\pause
+				\end{itemize}
+		\end{itemize}
+	\end{frame}
+	
+	
+	%ULAZNO-IZLAZNE INSTRUKCIJE & SISTEMSKE INSTRUKCIJE
+	\begin{frame}
+		Ulazno-izlazne instrukcije
+		\begin{itemize}
+			\item \pause Instrukcija IN skoro uvek radi sa operandima AX i DX (tj EAX,EDX ili RAX,RDX).DX \v cesto drzi adresu porta za \v citanje,a AX prima
+			podatke od porta\pause
+			\item Instrukcija OUT je veoma sli\v cna instrukciji IN.OUT stavlja podatke iz registra koje je u prvom operandu,na port dat u drugom operandu
+		\end{itemize}
+		
+		Sistemske instrukcije
+		\begin{itemize}
+			\item \pause Instrukcija SYSENTER uvodi procesor u za\v sti\' ceni re\v zim \pause
+			\item Instrukcija SYSEXIT izvla\v ci procesor iz za\v sti\' cenog re\v zima i uvodi ga u re\v zim za korisnika
+		\end{itemize}		
+	\end{frame}
+
+	
+
+	
+	
+	
+	
+\end{document}
